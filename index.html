@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>핏로그 - Daily Workout Tracker</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <style>
+    :root {
+      --primary: #FF5E3A;
+      --primary-gradient: linear-gradient(135deg, #FF5E3A 0%, #FF2A54 100%);
+      --accent-blue: #007AFF;
+      --accent-green: #34C759;
+      --accent-purple: #AF52DE;
+      --accent-orange: #FF9500;
+      --bg-dark: #0D1117;
+      --card-bg: #161B22;
+      --card-sub-bg: #21262D;
+      --text-main: #F0F6FC;
+      --text-muted: #8B949E;
+      --border: rgba(255, 255, 255, 0.08);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 16px 16px 40px 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 헤더 영역 */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 4px;
+    }
+
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .month-selector {
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      gap: 8px;
+    }
+
+    .month-selector input[type="month"] {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* 카드 기본 스타일 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 입력 폼 섹션 */
+    .date-row {
+      margin-bottom: 16px;
+    }
+
+    .date-input-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card-sub-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+    }
+
+    .date-input-wrap label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .date-input-wrap input {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 700;
+      outline: none;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .check-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: var(--card-sub-bg);
+      border: 2px solid transparent;
+      border-radius: var(--radius-md);
+      padding: 18px 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .check-btn:active {
+      transform: scale(0.97);
+    }
+
+    .check-btn .icon {
+      font-size: 2rem;
+    }
+
+    .check-btn .label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .check-btn.active.swim {
+      background: rgba(0, 122, 255, 0.15);
+      border-color: var(--accent-blue);
+    }
+    .check-btn.active.swim .label {
+      color: var(--accent-blue);
+    }
+
+    .check-btn.active.hang {
+      background: rgba(52, 199, 89, 0.15);
+      border-color: var(--accent-green);
+    }
+    .check-btn.active.hang .label {
+      color: var(--accent-green);
+    }
+
+    .num-input-card {
+      background: var(--card-sub-bg);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .num-input-card .head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .counter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .counter-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .counter-btn:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .counter-wrap input {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      text-align: center;
+      color: var(--text-main);
+      font-size: 1.2rem;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .save-btn {
+      width: 100%;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255, 94, 58, 0.35);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .save-btn:active {
+      transform: scale(0.98);
+      opacity: 0.9;
+    }
+
+    /* 요약 대시보드 (수영/매달리기) */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-box {
+      background: var(--card-sub-bg);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+    }
+
+    .summary-box.swim::before {
+      background: var(--accent-blue);
+    }
+
+    .summary-box.hang::before {
+      background: var(--accent-green);
+    }
+
+    .summary-box .title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .summary-box .value {
+      font-size: 1.7rem;
+      font-weight: 800;
+    }
+
+    .summary-box.swim .value {
+      color: var(--accent-blue);
+    }
+
+    .summary-box.hang .value {
+      color: var(--accent-green);
+    }
+
+    /* 차트 영역 */
+    .chart-container {
+      position: relative;
+      height: 240px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .chart-container:last-child {
+      margin-bottom: 0;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .chart-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* 토스트 메시지 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(255, 255, 255, 0.95);
+      color: #111;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 헤더 -->
+    <header>
+      <div class="brand-title">
+        <span>⚡ 핏로그</span>
+      </div>
+      <div class="month-selector">
+        <input type="month" id="selectedMonth">
+      </div>
+    </header>
+
+    <!-- 운동 입력 카드 -->
+    <section class="card">
+      <div class="section-title">오늘의 운동 기록하기</div>
+      
+      <div class="date-row">
+        <div class="date-input-wrap">
+          <label for="workoutDate">날짜 선택</label>
+          <input type="date" id="workoutDate">
+        </div>
+      </div>
+
+      <!-- 토글 체크 항목 (수영, 매달리기) -->
+      <div class="input-grid">
+        <div class="check-btn swim" id="swimBtn" onclick="toggleStatus('swim')">
+          <span class="icon">🏊‍♂️</span>
+          <span class="label">수영 완료</span>
+        </div>
+        <div class="check-btn hang" id="hangBtn" onclick="toggleStatus('hang')">
+          <span class="icon">🧗‍♂️</span>
+          <span class="label">매달리기 완료</span>
+        </div>
+      </div>
+
+      <!-- 수치 입력 항목 (달리기, 푸시업) -->
+      <div class="input-grid">
+        <div class="num-input-card">
+          <div class="head">🏃 달리기 (km)</div>
+          <div class="counter-wrap">
+            <button class="counter-btn" onclick="stepVal('run', -0.5)">-</button>
+            <input type="number" id="runInput" step="0.1" min="0" value="0.0">
+            <button class="counter-btn" onclick="stepVal('run', 0.5)">+</button>
+          </div>
+        </div>
+        <div class="num-input-card">
+          <div class="head">💪 푸시업 (개)</div>
+          <div class="counter-wrap">
+            <button class="counter-btn" onclick="stepVal('pushup', -5)">-</button>
+            <input type="number" id="pushupInput" step="1" min="0" value="0">
+            <button class="counter-btn" onclick="stepVal('pushup', 5)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="save-btn" onclick="saveRecord()">운동 기록 저장하기</button>
+    </section>
+
+    <!-- 월별 통계 및 그래프 카드 -->
+    <section class="card">
+      <div class="section-title">📊 이번 달 운동 리포트</div>
+
+      <!-- 수영/매달리기 이번 달 달성 일수 -->
+      <div class="summary-grid">
+        <div class="summary-box swim">
+          <span class="title">이번 달 수영</span>
+          <span class="value" id="swimCount">0일</span>
+        </div>
+        <div class="summary-box hang">
+          <span class="title">이번 달 매달리기</span>
+          <span class="value" id="hangCount">0일</span>
+        </div>
+      </div>
+
+      <!-- 달리기 막대그래프 -->
+      <div class="chart-header">
+        <span style="font-weight: 700; font-size: 0.95rem;">🏃‍♂️ 달리기 일별 기록 (km)</span>
+        <span class="chart-subtitle" id="totalRunDist">총 0.0 km</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="runChart"></canvas>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 24px 0;">
+
+      <!-- 푸시업 막대그래프 -->
+      <div class="chart-header">
+        <span style="font-weight: 700; font-size: 0.95rem;">💪 푸시업 일별 기록 (개수)</span>
+        <span class="chart-subtitle" id="totalPushups">총 0 개</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="pushupChart"></canvas>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">기록이 저장되었습니다! 🔥</div>
+
+  <script>
+    // 상태 관리
+    let currentRecord = {
+      swim: false,
+      hang: false,
+      run: 0.0,
+      pushup: 0
+    };
+
+    let runChartInstance = null;
+    let pushupChartInstance = null;
+
+    // 초기화
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+
+      document.getElementById('workoutDate').value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('selectedMonth').value = `${yyyy}-${mm}`;
+
+      document.getElementById('workoutDate').addEventListener('change', loadRecordForDate);
+      document.getElementById('selectedMonth').addEventListener('change', updateDashboard);
+
+      loadRecordForDate();
+      updateDashboard();
+    });
+
+    // 특정 날짜의 기록 불러오기
+    function loadRecordForDate() {
+      const dateKey = document.getElementById('workoutDate').value;
+      const saved = localStorage.getItem(`workout_${dateKey}`);
+
+      if (saved) {
+        currentRecord = JSON.parse(saved);
+      } else {
+        currentRecord = { swim: false, hang: false, run: 0.0, pushup: 0 };
+      }
+
+      document.getElementById('swimBtn').classList.toggle('active', !!currentRecord.swim);
+      document.getElementById('hangBtn').classList.toggle('active', !!currentRecord.hang);
+      document.getElementById('runInput').value = (currentRecord.run || 0).toFixed(1);
+      document.getElementById('pushupInput').value = currentRecord.pushup || 0;
+    }
+
+    // 토글 핸들러
+    function toggleStatus(type) {
+      currentRecord[type] = !currentRecord[type];
+      document.getElementById(`${type}Btn`).classList.toggle('active', currentRecord[type]);
+    }
+
+    // 증감 스텝
+    function stepVal(type, step) {
+      const input = document.getElementById(type === 'run' ? 'runInput' : 'pushupInput');
+      let val = parseFloat(input.value) || 0;
+      val = Math.max(0, val + step);
+      input.value = type === 'run' ? val.toFixed(1) : Math.round(val);
+    }
+
+    // 기록 저장
+    function saveRecord() {
+      const dateKey = document.getElementById('workoutDate').value;
+      currentRecord.run = parseFloat(document.getElementById('runInput').value) || 0;
+      currentRecord.pushup = parseInt(document.getElementById('pushupInput').value) || 0;
+
+      localStorage.setItem(`workout_${dateKey}`, JSON.stringify(currentRecord));
+      showToast();
+      updateDashboard();
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 대시보드 통계 및 그래프 갱신
+    function updateDashboard() {
+      const selectedMonth = document.getElementById('selectedMonth').value; // YYYY-MM
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      const days = [];
+      const runData = [];
+      const pushupData = [];
+      let swimDaysCount = 0;
+      let hangDaysCount = 0;
+      let totalRun = 0;
+      let totalPushup = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dd = String(d).padStart(2, '0');
+        const dateKey = `${selectedMonth}-${dd}`;
+        days.push(`${d}일`);
+
+        const saved = localStorage.getItem(`workout_${dateKey}`);
+        if (saved) {
+          const rec = JSON.parse(saved);
+          if (rec.swim) swimDaysCount++;
+          if (rec.hang) hangDaysCount++;
+          
+          const r = rec.run || 0;
+          const p = rec.pushup || 0;
+          runData.push(r);
+          pushupData.push(p);
+
+          totalRun += r;
+          totalPushup += p;
+        } else {
+          runData.push(0);
+          pushupData.push(0);
+        }
+      }
+
+      // 텍스트 반영
+      document.getElementById('swimCount').innerText = `${swimDaysCount}일`;
+      document.getElementById('hangCount').innerText = `${hangDaysCount}일`;
+      document.getElementById('totalRunDist').innerText = `총 ${totalRun.toFixed(1)} km`;
+      document.getElementById('totalPushups').innerText = `총 ${totalPushup} 개`;
+
+      renderRunChart(days, runData);
+      renderPushupChart(days, pushupData);
+    }
+
+    // 달리기 차트 렌더링
+    function renderRunChart(labels, data) {
+      const ctx = document.getElementById('runChart').getContext('2d');
+      if (runChartInstance) runChartInstance.destroy();
+
+      runChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: '#FF5E3A',
+            borderRadius: 4,
+            maxBarThickness: 12
+          }]
+        },
+        options: getChartOptions('km')
+      });
+    }
+
+    // 푸시업 차트 렌더링
+    function renderPushupChart(labels, data) {
+      const ctx = document.getElementById('pushupChart').getContext('2d');
+      if (pushupChartInstance) pushupChartInstance.destroy();
+
+      pushupChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+            backgroundColor: '#FF9500',
+            borderRadius: 4,
+            maxBarThickness: 12
+          }]
+        },
+        options: getChartOptions('개')
+      });
+    }
+
+    // 공통 차트 옵션
+    function getChartOptions(unit) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.parsed.y} ${unit}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#8B949E',
+              font: { size: 10 },
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: {
+              color: '#8B949E',
+              font: { size: 10 }
+            }
+          }
+        }
+      };
+    }
+  </script>
+</body>
+</html>
